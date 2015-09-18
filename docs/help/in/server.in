@@ -14,15 +14,15 @@
     -!:                Doesn't autojoin the channels.
     -4:                Connects using IPv4.
     -6:                Connects using IPv6.
-    -ssl:              Connects using SSL encryption.
-    -ssl_cert:         The SSL client certificate file.
-    -ssl_pkey:         The SSL client private key, if not included in the
+    -tls:              Connects using TLS encryption.
+    -tls_cert:         The TLS client certificate file.
+    -tls_pkey:         The TLS client private key, if not included in the
                        certificate file.
-    -ssl_pass:         The password for the SSL client private key or certificate.
-    -ssl_verify:       Verifies the SSL certificate of the server.
-    -ssl_cafile:       The file with the list of CA certificates.
-    -ssl_capath:       The directory which contains the CA certificates.
-    -ssl_ciphers:      SSL cipher suite preference lists.
+    -tls_pass:         The password for the TLS client private key or certificate.
+    -tls_verify:       Verifies the TLS certificate of the server.
+    -tls_cafile:       The file with the list of CA certificates.
+    -tls_capath:       The directory which contains the CA certificates.
+    -tls_ciphers:      TLS cipher suite preference lists.
     -auto:             Automatically connects to the server on startup.
     -noauto:           Doesn't connect to the server on startup.
     -network:          The network the server belongs to.
@@ -42,7 +42,7 @@
 
 %9Description:%9
 
-    Displays, adds, modifies or removes the network configuration of IRC 
+    Displays, adds, modifies or removes the network configuration of IRC
     servers.
 
     When using the ADD parameter on a server that already exists, the

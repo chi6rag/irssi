@@ -455,13 +455,13 @@ static GIOChannel *irssi_ssl_get_iochannel(GIOChannel *handle, int port, SERVER_
 	SSL *ssl;
 	SSL_CTX *ctx = NULL;
 
-	const char *mycert = server->connrec->ssl_cert;
-	const char *mypkey = server->connrec->ssl_pkey;
-	const char *mypass = server->connrec->ssl_pass;
-	const char *cafile = server->connrec->ssl_cafile;
-	const char *capath = server->connrec->ssl_capath;
-	const char *ciphers = server->connrec->ssl_ciphers;
-	gboolean verify = server->connrec->ssl_verify;
+	const char *mycert = server->connrec->tls_cert;
+	const char *mypkey = server->connrec->tls_pkey;
+	const char *mypass = server->connrec->tls_pass;
+	const char *cafile = server->connrec->tls_cafile;
+	const char *capath = server->connrec->tls_capath;
+	const char *ciphers = server->connrec->tls_ciphers;
+	gboolean verify = server->connrec->tls_verify;
 
 	g_return_val_if_fail(handle != NULL, NULL);
 

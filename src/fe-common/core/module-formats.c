@@ -73,6 +73,7 @@ FORMAT_REC fecommon_core_formats[] = {
 	{ "connecting", "Connecting to {server $0} [$1] port {hilight $2}", 3, { 0, 0, 1 } },
 	{ "reconnecting", "Reconnecting to {server $0} [$1] port {hilight $2} - use /RMRECONNS to abort", 3, { 0, 0, 1 } },
 	{ "connection_established", "Connection to {server $0} established", 1, { 0 } },
+	{ "encrypted_connection_established", "Encrypted connection to {server $0} established, using {hilight $1} ({hilight $2})", 3, { 0, 0, 0 } },
 	{ "cant_connect", "Unable to connect server {server $0} port {hilight $1} {reason $2}", 3, { 0, 1, 0 } },
 	{ "connection_lost", "Connection lost to {server $0}", 1, { 0 } },
 	{ "lag_disconnected", "No PONG reply from server {server $0} in $1 seconds, disconnecting", 2, { 0, 1 } },

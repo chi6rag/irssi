@@ -1,6 +1,13 @@
 #ifndef __NETWORK_H
 #define __NETWORK_H
 
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #ifdef HAVE_SOCKS_H
 #include <socks.h>
 #endif
@@ -29,6 +36,19 @@ struct _IPADDR {
 	struct in_addr ip;
 #endif
 };
+
+/* ssl i/o channel object */
+typedef struct
+{
+	GIOChannel pad;
+	gint fd;
+	GIOChannel *giochan;
+	SSL *ssl;
+	SSL_CTX *ctx;
+	unsigned int verify:1;
+	SERVER_REC *server;
+	int port;
+} GIOSSLChannel;
 
 /* maxmimum string length of IP address */
 #ifdef HAVE_IPV6

@@ -23,30 +23,10 @@
 #include "misc.h"
 #include "servers.h"
 
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
 #ifdef HAVE_DANE
 #include <validator/validator.h>
 #include <validator/val_dane.h>
 #endif
-
-/* ssl i/o channel object */
-typedef struct
-{
-	GIOChannel pad;
-	gint fd;
-	GIOChannel *giochan;
-	SSL *ssl;
-	SSL_CTX *ctx;
-	unsigned int verify:1;
-	SERVER_REC *server;
-	int port;
-} GIOSSLChannel;
 
 static int ssl_inited = FALSE;
 
@@ -424,7 +404,6 @@ static gboolean irssi_ssl_init(void)
 	ssl_inited = TRUE;
 
 	return TRUE;
-
 }
 
 static int get_pem_password_callback(char *buffer, int max_length, int rwflag, void *pass)
@@ -477,7 +456,8 @@ static GIOChannel *irssi_ssl_get_iochannel(GIOChannel *handle, int port, SERVER_
 	SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 	SSL_CTX_set_default_passwd_cb(ctx, get_pem_password_callback);
 	SSL_CTX_set_default_passwd_cb_userdata(ctx, (void *)mypass);
-	if (ciphers && *ciphers) {
+
+	if (ciphers != NULL && ciphers[0] != '\0') {
 		if (SSL_CTX_set_cipher_list(ctx, ciphers) != 1)
 			g_warning("No valid SSL cipher suite could be selected");
 	}
@@ -538,8 +518,7 @@ static GIOChannel *irssi_ssl_get_iochannel(GIOChannel *handle, int port, SERVER_
 	SSL_set_tlsext_host_name(ssl, server->connrec->address);
 #endif
 
-	SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE |
-			SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+	SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
 	chan = g_new0(GIOSSLChannel, 1);
 	chan->fd = fd;
@@ -608,6 +587,7 @@ int irssi_ssl_handshake(GIOChannel *handle)
 		g_warning("SSL server supplied no certificate");
 		return -1;
 	}
+
 	ret = !chan->verify || irssi_ssl_verify(chan->ssl, chan->ctx, chan->server->connrec->address, chan->port, cert, chan->server);
 	X509_free(cert);
 	return ret ? 0 : -1;

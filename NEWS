@@ -5,6 +5,7 @@ v0.8.18-head 2014-XX-YY  The Irssi team <staff@irssi.org>
 	+ Try to split long lines on spaces to avoid words being splitted. Adds
 	  a new option: 'split_line_on_space' which defaults to on.
 	+ TLS: Rename SSL to TLS throughout the code and command interfaces.
+	+ TLS: Automatically connect using TLS for known IRC networks that supports encrypted connections.
 	+ TLS: OpenSSL is now a required dependency.
 
 v0.8.17 2014-10-11  The Irssi team <staff@irssi.org>

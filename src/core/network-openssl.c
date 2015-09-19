@@ -23,8 +23,6 @@
 #include "misc.h"
 #include "servers.h"
 
-#ifdef HAVE_OPENSSL
-
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
@@ -614,14 +612,3 @@ int irssi_ssl_handshake(GIOChannel *handle)
 	X509_free(cert);
 	return ret ? 0 : -1;
 }
-
-#else /* HAVE_OPENSSL */
-
-GIOChannel *net_connect_ip_ssl(IPADDR *ip, int port, IPADDR *my_ip, SERVER_REC *server)
-{
-	g_warning("Connection failed: SSL support not enabled in this build.");
-	errno = ENOSYS;
-	return NULL;
-}
-
-#endif /* ! HAVE_OPENSSL */

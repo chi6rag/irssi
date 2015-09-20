@@ -549,6 +549,10 @@ int irssi_ssl_handshake(GIOChannel *handle)
 	int ret, err;
 	X509 *cert;
 	const char *errstr;
+	unsigned char md[EVP_MAX_MD_SIZE];
+	unsigned int n;
+	const char *fingerprint = chan->server->connrec->tls_fingerprint;
+	char *cert_fingerprint = NULL;
 
 	ret = SSL_connect(chan->ssl);
 	if (ret <= 0) {
@@ -580,7 +584,21 @@ int irssi_ssl_handshake(GIOChannel *handle)
 		return -1;
 	}
 
-	ret = !chan->verify || irssi_ssl_verify(chan->ssl, chan->ctx, chan->server->connrec->address, chan->port, cert, chan->server);
+	if (X509_digest(cert, EVP_sha256(), md, &n)) {
+		cert_fingerprint = binary_to_hex(md, n);
+	}
+
+	if (cert_fingerprint != NULL && fingerprint != NULL && fingerprint[0] != '\0')
+	{
+		ret = g_ascii_strcasecmp(fingerprint, cert_fingerprint) == 0;
+
+		if (! ret)
+			g_warning("  Pinned fingerprint mismatch");
+	}
+	else
+		ret = !chan->verify || irssi_ssl_verify(chan->ssl, chan->ctx, chan->server->connrec->address, chan->port, cert, chan->server);
+
+	g_free(cert_fingerprint);
 	X509_free(cert);
 	return ret ? 0 : -1;
 }

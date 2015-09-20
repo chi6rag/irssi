@@ -124,6 +124,8 @@ static void cmd_server_list(const char *data)
 				g_string_append_printf(str, "tls_capath: %s, ", rec->tls_capath);
 			if (rec->tls_ciphers)
 				g_string_append_printf(str, "tls_ciphers: %s, ", rec->tls_ciphers);
+			if (rec->tls_fingerprint)
+				g_string_append_printf(str, "tls_fingerprint: %s, ", rec->tls_fingerprint);
 
 		}
 		if (rec->max_cmds_at_once > 0)

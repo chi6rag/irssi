@@ -190,6 +190,12 @@ static void cmd_server_add(const char *data)
 	if (value != NULL && *value != '\0')
 		rec->tls_ciphers = g_strdup(value);
 
+	value = g_hash_table_lookup(optlist, "tls_fingerprint");
+	if (value == NULL)
+		value = g_hash_table_lookup(optlist, "ssl_fingerprint");
+	if (value != NULL && *value != '\0')
+		rec->tls_fingerprint = g_strdup(value);
+
 	if ((rec->tls_cafile != NULL && rec->tls_cafile[0] != '\0')
 	||  (rec->tls_capath != NULL && rec->tls_capath[0] != '\0'))
 		rec->tls_verify = TRUE;
@@ -420,7 +426,7 @@ void fe_server_init(void)
 	command_bind("server remove", NULL, (SIGNAL_FUNC) cmd_server_remove);
 	command_bind_first("server", NULL, (SIGNAL_FUNC) server_command);
 	command_bind_first("disconnect", NULL, (SIGNAL_FUNC) server_command);
-	command_set_options("server add", "4 6 !! ssl +ssl_cert +ssl_pkey +ssl_pass ssl_verify +ssl_cafile +ssl_capath +ssl_ciphers tls +tls_cert +tls_pkey +tls_pass tls_verify +tls_cafile +tls_capath +tls_ciphers auto noauto proxy noproxy -host -port noautosendcmd");
+	command_set_options("server add", "4 6 !! ssl +ssl_cert +ssl_pkey +ssl_pass ssl_verify +ssl_cafile +ssl_capath +ssl_ciphers +ssl_fingerprint tls +tls_cert +tls_pkey +tls_pass tls_verify +tls_cafile +tls_capath +tls_ciphers +tls_fingerprint auto noauto proxy noproxy -host -port noautosendcmd");
 
 	signal_add("server looking", (SIGNAL_FUNC) sig_server_looking);
 	signal_add("server connecting", (SIGNAL_FUNC) sig_server_connecting);

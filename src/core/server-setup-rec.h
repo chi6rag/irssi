@@ -14,6 +14,7 @@ char *tls_pass;
 char *tls_cafile;
 char *tls_capath;
 char *tls_ciphers;
+char *tls_fingerprint;
 
 char *own_host; /* address to use when connecting this server */
 IPADDR *own_ip4, *own_ip6; /* resolved own_address if not NULL */

@@ -25,6 +25,7 @@
 #include "levels.h"
 #include "settings.h"
 #include "net-sendbuffer.h"
+#include "misc.h"
 
 #include "chat-protocols.h"
 #include "chatnets.h"
@@ -333,24 +334,146 @@ static void sig_server_connected(SERVER_REC *server)
 {
 	g_return_if_fail(server != NULL);
 
-	if (server->connrec->use_tls)
-	{
-		GIOSSLChannel *chan = (GIOSSLChannel *)net_sendbuffer_handle(server->handle);
-
-		g_return_if_fail(chan != NULL);
-
-		const char *tls_version = SSL_get_version(chan->ssl);
-		const char *tls_cipher = SSL_CIPHER_get_name(SSL_get_current_cipher(chan->ssl));
-
-		printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_ENCRYPTED_CONNECTION_ESTABLISHED,
-				server->connrec->address,
-				tls_version,
-				tls_cipher);
-
+	if (! server->connrec->use_tls) {
+		printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_CONNECTION_ESTABLISHED, server->connrec->address);
 		return;
 	}
 
-	printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_CONNECTION_ESTABLISHED, server->connrec->address);
+	GIOSSLChannel *chan = (GIOSSLChannel *)net_sendbuffer_handle(server->handle);
+	g_return_if_fail(chan != NULL);
+
+	const char *tls_version = SSL_get_version(chan->ssl);
+	const char *tls_cipher = SSL_CIPHER_get_name(SSL_get_current_cipher(chan->ssl));
+
+	printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_ENCRYPTED_CONNECTION_ESTABLISHED,
+			server->connrec->address,
+			tls_version,
+			tls_cipher);
+
+	if (! settings_get_bool("tls_connect_verbose"))
+		return;
+
+	// Show certificate chain.
+	STACK_OF(X509) *chain = NULL;
+
+	chain = SSL_get_peer_cert_chain(chan->ssl);
+
+	if (chain != NULL) {
+		printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_CERT_HEADER);
+		int i;
+
+		for (i = 0; i < sk_X509_num(chain); i++) {
+			int j;
+			X509_NAME *name;
+			int nid;
+
+			printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_CERT_SUBJECT_HEADER);
+
+			name = X509_get_subject_name(sk_X509_value(chain, i));
+			for (j = 0; j < X509_NAME_entry_count(name); j++) {
+				X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, j);
+
+				nid = OBJ_obj2nid(X509_NAME_ENTRY_get_object(entry));
+				char *name = (char *)OBJ_nid2sn(nid);
+				if (name == NULL)
+					name = (char *)OBJ_nid2ln(nid);
+
+				ASN1_STRING *d = X509_NAME_ENTRY_get_data(entry);
+				char *value = (char *)ASN1_STRING_data(d);
+
+				printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_CERT_NAMED_ENTRY, name, value);
+			}
+
+			printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_CERT_ISSUER_HEADER);
+
+			name = X509_get_issuer_name(sk_X509_value(chain, i));
+			for (j = 0; j < X509_NAME_entry_count(name); j++) {
+				X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, j);
+
+				nid = OBJ_obj2nid(X509_NAME_ENTRY_get_object(entry));
+				char *name = (char *)OBJ_nid2sn(nid);
+				if (name == NULL)
+					name = (char *)OBJ_nid2ln(nid);
+
+				ASN1_STRING *d = X509_NAME_ENTRY_get_data(entry);
+				char *value = (char *)ASN1_STRING_data(d);
+
+				printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_CERT_NAMED_ENTRY, name, value);
+			}
+		}
+	}
+
+	// Show server public key information.
+	X509 *peer = SSL_get_peer_certificate(chan->ssl);
+
+	if (peer != NULL) {
+		EVP_PKEY *pubkey = X509_get_pubkey(peer);
+		char *pubkey_type = NULL;
+
+		// Show server fingerprint.
+		unsigned char md[EVP_MAX_MD_SIZE];
+		char *fingerprint = NULL;
+		unsigned int n = 0;
+
+		if (X509_digest(peer, EVP_sha256(), md, &n)) {
+			fingerprint = binary_to_hex(md, n);
+			printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_CERT_FINGERPRINT, fingerprint, "SHA256");
+			g_free(fingerprint);
+		}
+
+		// Show algorithm.
+		switch (EVP_PKEY_id(pubkey)) {
+			case EVP_PKEY_RSA:
+				pubkey_type = "RSA";
+				break;
+			case EVP_PKEY_DSA:
+				pubkey_type = "DSA";
+				break;
+			default:
+				pubkey_type = "Unknown";
+				break;
+		}
+		printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_PUBKEY_SIZE, EVP_PKEY_bits(pubkey), pubkey_type);
+
+		EVP_PKEY_free(pubkey);
+	}
+
+#if defined(SSL_get_server_tmp_key)
+	// Show ephemeral key information.
+	EVP_PKEY *ephemeral_key = NULL;
+
+	if (SSL_get_server_tmp_key(chan->ssl, &ephemeral_key)) {
+		switch (EVP_PKEY_id(ephemeral_key)) {
+			case EVP_PKEY_RSA:
+				printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_EPHEMERAL_KEY,
+						EVP_PKEY_bits(ephemeral_key), "RSA");
+				break;
+			case EVP_PKEY_DH:
+				printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_EPHEMERAL_KEY,
+						EVP_PKEY_bits(ephemeral_key), "DH");
+				break;
+			case EVP_PKEY_EC:
+			{
+				EC_KEY *ec = EVP_PKEY_get1_EC_KEY(ephemeral_key);
+				int nid;
+				const char *cname;
+				nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(ec));
+				EC_KEY_free(ec);
+				cname = OBJ_nid2sn(nid);
+				char *key_type = g_strdup_printf("ECDH: %s", cname);
+				printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_EPHEMERAL_KEY,
+						EVP_PKEY_bits(ephemeral_key), key_type);
+				g_free(key_type);
+			}
+		}
+
+		EVP_PKEY_free(ephemeral_key);
+	}
+	else
+	{
+		printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, TXT_TLS_SERVER_EPHEMERAL_KEY_UNAVAILBLE);
+	}
+#endif // defined(SSL_get_server_tmp_key).
 }
 
 static void sig_connect_failed(SERVER_REC *server, gchar *msg)
@@ -420,6 +543,8 @@ static void sig_chat_protocol_unknown(const char *protocol)
 
 void fe_server_init(void)
 {
+	settings_add_bool("lookandfeel", "tls_connect_verbose", TRUE);
+
 	command_bind("server", NULL, (SIGNAL_FUNC) cmd_server);
 	command_bind("server connect", NULL, (SIGNAL_FUNC) cmd_server_connect);
 	command_bind("server add", NULL, (SIGNAL_FUNC) cmd_server_add);

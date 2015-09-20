@@ -91,6 +91,14 @@ FORMAT_REC fecommon_core_formats[] = {
 	{ "setupserver_removed", "Server {server $0} removed", 2, { 0, 1 } },
 	{ "setupserver_not_found", "Server {server $0} not found", 2, { 0, 1 } },
 	{ "your_nick", "Your nickname is {nick $0}", 1, { 0 } },
+	{ "tls_server_ephemeral_key", "Ephemeral Key: {hilight $0} bits ({hilight $1})", 2, { 1, 0 } },
+	{ "tls_server_ephemeral_key_unavailable", "Ephemeral Key: {error N/A}", 0 },
+	{ "tls_server_pubkey_size", "Public Key: {hilight $0} bits ({hilight $1})", 2, { 1, 0 } },
+	{ "tls_server_cert_header", "Certificate Chain:", 0 },
+	{ "tls_server_cert_subject_header", "  Subject:", 0 },
+	{ "tls_server_cert_issuer_header", "  Issuer:", 0 },
+	{ "tls_server_cert_named_entry", "    $[-2]0: {hilight $1}", 2, { 0, 0 } },
+	{ "tls_server_cert_fingerprint", "Fingerprint: {hilight $0} ({hilight $1})", 2, { 0, 0 } },
 
 	/* ---- */
 	{ NULL, "Channels", 0 },

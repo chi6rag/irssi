@@ -238,11 +238,11 @@ static gboolean irssi_ssl_verify(SSL *ssl, SSL_CTX *ctx, const char* hostname, i
 			g_warning("  Issuer  : %s", str);
 			free(str);
 		}
-		if (! X509_digest(cert, EVP_md5(), md, &n))
+		if (! X509_digest(cert, EVP_sha256(), md, &n))
 			g_warning("  Could not get fingerprint from peer certificate");
 		else {
 			char *fp = binary_to_hex(md, n);
-			g_warning("  MD5 Fingerprint : %s", fp);
+			g_warning("  SHA256 Fingerprint : %s", fp);
 			g_free(fp);
 		}
 		return FALSE;

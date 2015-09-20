@@ -241,17 +241,9 @@ static gboolean irssi_ssl_verify(SSL *ssl, SSL_CTX *ctx, const char* hostname, i
 		if (! X509_digest(cert, EVP_md5(), md, &n))
 			g_warning("  Could not get fingerprint from peer certificate");
 		else {
-			char hex[] = "0123456789ABCDEF";
-			char fp[EVP_MAX_MD_SIZE*3];
-			if (n < sizeof(fp)) {
-				unsigned int i;
-				for (i = 0; i < n; i++) {
-					fp[i*3+0] = hex[(md[i] >> 4) & 0xF];
-					fp[i*3+1] = hex[(md[i] >> 0) & 0xF];
-					fp[i*3+2] = i == n - 1 ? '\0' : ':';
-				}
-				g_warning("  MD5 Fingerprint : %s", fp);
-			}
+			char *fp = binary_to_hex(md, n);
+			g_warning("  MD5 Fingerprint : %s", fp);
+			g_free(fp);
 		}
 		return FALSE;
 	} else if (! irssi_ssl_verify_hostname(cert, hostname)){
